@@ -1,6 +1,6 @@
 % Test delay estimator in DL
 
-num_of_sim = 10;       % number of simulation per SNR working point
+num_of_sim = 100;       % number of simulation per SNR working point
 
 Gtx = 0;
 Grx = 0;
@@ -28,17 +28,16 @@ for nFFT_i = 1 : length(nFFTs)
         Tx_pwr_dBm = Tx_max_power + 10 * log10(nFFT / min(nFFTs) * subc / min(subcs)) ;         % 20dBm = 100mW for 20MHz as the baseline. The larger the cell bandwidth, the higher of the transmission power.
         Tx_power_scaling_dB = -40;                                      % Tx power scaling in PSS signal
         Tx_Gain = 90;                                                   % Tx gain in the DAC conversion
-        Fft_Scale_dB = 10 * log10(nFFT / min(nFFTs));
-                % channel gain     
+        Fft_Scale_dB = 10 * log10(nFFT / min(nFFTs)); 
 
-        TimeErr_sec = zeros(num_of_sim, length(channels_gains));
-        SNR_dB = zeros(num_of_sim, length(channels_gains));
-        TimeEst_Err_Ts = zeros(num_of_sim, length(channels_gains));
+        TimeErr_sec = zeros(num_of_sim, length(d));
+        SNR_dB = zeros(num_of_sim, length(d));
+        TimeEst_Err_Ts = zeros(num_of_sim, length(d));
 
-        for h_idx = 1 : length(channels_gains)
-            fprintf('d=%d meter:\n', d(h_idx))
+        for d_idx = 1 : length(d)
+            fprintf('d=%d meter:\n', d(d_idx))
             
-            r = d(h_idx);
+            r = d(d_idx);
             theta_s = atan2(r, (h_s + h_u));
             r_s = h_s * tan(theta_s);
             r_u = r - r_s;
@@ -64,13 +63,13 @@ for nFFT_i = 1 : length(nFFTs)
 %                     fprintf('\n');                
 %                 end
                 seed = idx;
-                ideal_delay_second = d(h_idx) / c; % calculate the delay by distance (in second)
+                ideal_delay_second = d(d_idx) / c; % calculate the delay by distance (in second)
                 ideal_delay_Ts = ceil(ideal_delay_second / Ts_sec); % calculate the delay by distance (in Ts, i.e., sample)
                 ideal_delay_second_quantized = ideal_delay_Ts * Ts_sec;
                 [SNRdB, TimeEstTs] = DelayEst_f(nFFT, subc, h, ideal_delay_Ts, seed, debug_flag); % execute delay estimation in UE side
-                SNR_dB(idx, h_idx) = SNRdB;
-                TimeEst_Err_Ts(idx, h_idx) = TimeEstTs - ideal_delay_Ts;
-                TimeErr_sec(idx, h_idx) = (TimeEstTs * Ts_sec - ideal_delay_second_quantized);
+                SNR_dB(idx, d_idx) = SNRdB;
+                TimeEst_Err_Ts(idx, d_idx) = TimeEstTs - ideal_delay_Ts;
+                TimeErr_sec(idx, d_idx) = (TimeEstTs * Ts_sec - ideal_delay_second_quantized);
 
                 if (mod(idx, 1) == 0)
                     TimeEst_second = TimeEstTs * Ts_sec;
