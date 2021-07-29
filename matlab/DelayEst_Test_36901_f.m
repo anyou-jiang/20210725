@@ -99,7 +99,7 @@ for sub_scenario_i = 1 : numel(sub_scenarios)
 
 
     file_name = sprintf('%s_%s', scenario, sub_scenario);
-    save_plot_results_f(file_name, nFFTs, subcs, d, SNR_avg, Time_Err_Var_sec);
+    save_plot_results_f(file_name, nFFTs, subcs, d, SNR_avg, Time_Err_Mean_sec, Time_Err_Var_sec);
 end
 
 
