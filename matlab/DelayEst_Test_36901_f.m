@@ -4,7 +4,7 @@ num_of_sim = 100;       % number of simulation per SNR working point
 
 Gtx = 0;
 Grx = 0;
-d = [200 : -20 : 100 ];    % distance between base station and the UE in meters
+d = [200 : -50 : 100 ];    % distance between base station and the UE in meters
 f = 3e9;                % center frequency in Hz 
 c = 3e8;                % light speed m/s
 h_BS = 35;  % height of the base station
@@ -13,6 +13,10 @@ W = 20; % avg. street width
 h = 5; % avg. building height 
 f_c = 3.5e9; % 3.5GHz
 
+% initial the random seed
+seed = 1;
+s = RandStream('mt19937ar','Seed', seed);
+RandStream.setGlobalStream(s);
 
 debug_flag = 0;
 
@@ -47,27 +51,19 @@ for sub_scenario_i = 1 : numel(sub_scenarios)
             TimeEst_Err_Ts = zeros(num_of_sim, length(d));
 
             for d_idx = 1 : length(d)
-                fprintf('d=%d meter:\n', d(d_idx))
-                
+                fprintf('d=%d meter:\n', d(d_idx))               
                 d_2D = d(d_idx);         
-                FSPL = getPathLoss_f(h_BS, h_UT, d_2D, f_c, scenario, sub_scenario, h, W); %20 * log10(r1) + 20 * log10(f) + 20 * log10(4*pi/c)- Gtx - Grx;   % refer to https://www.everythingrf.com/rf-calculators/free-space-path-loss-calculator
-                channels_gains_dBm = Tx_pwr_dBm + Tx_power_scaling_dB + Tx_Gain + Fft_Scale_dB - FSPL;
-                channels_gains = 10 .^((channels_gains_dBm)/20);   
 
-                h = channels_gains;
                 for idx = 1 : num_of_sim
-
-    %                 if (mod(idx, 1) == 0)
-    %                     fprintf('.');
-    %                 end
-    %                 if (mod(idx, 1) == 0)
-    %                     fprintf('\n');                
-    %                 end
-                    seed = idx;
+                    FSPL = getPathLoss_f(h_BS, h_UT, d_2D, f_c, scenario, sub_scenario, h, W); %20 * log10(r1) + 20 * log10(f) + 20 * log10(4*pi/c)- Gtx - Grx;   % refer to https://www.everythingrf.com/rf-calculators/free-space-path-loss-calculator
+                    channels_gains_dBm = Tx_pwr_dBm + Tx_power_scaling_dB + Tx_Gain + Fft_Scale_dB - FSPL;
+                    channels_gains = 10 .^((channels_gains_dBm)/20);   
+                    h = channels_gains;
+                    
                     ideal_delay_second = d(d_idx) / c; % calculate the delay by distance (in second)
                     ideal_delay_Ts = ceil(ideal_delay_second / Ts_sec); % calculate the delay by distance (in Ts, i.e., sample)
                     ideal_delay_second_quantized = ideal_delay_Ts * Ts_sec;
-                    [SNRdB, TimeEstTs] = DelayEst_f(nFFT, subc, h, ideal_delay_Ts, seed, debug_flag); % execute delay estimation in UE side
+                    [SNRdB, TimeEstTs] = DelayEst_f(nFFT, subc, h, ideal_delay_Ts, debug_flag); % execute delay estimation in UE side
                     SNR_dB(idx, d_idx) = SNRdB;
                     TimeEst_Err_Ts(idx, d_idx) = TimeEstTs - ideal_delay_Ts;
                     TimeErr_sec(idx, d_idx) = (TimeEstTs * Ts_sec - ideal_delay_second_quantized);

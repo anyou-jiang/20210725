@@ -1,8 +1,4 @@
-function [SNRdB_o, TimeEstTs_o] = DelayEst_f(nFFT_i, subc_i, h_i, DelayTs_i, Seed_i, debug_i)
-
-% initial the random seed
-s = RandStream('mt19937ar','Seed', Seed_i);
-RandStream.setGlobalStream(s);
+function [SNRdB_o, TimeEstTs_o] = DelayEst_f(nFFT_i, subc_i, h_i, DelayTs_i, debug_i)
 
 nFFT = nFFT_i;
 subc = subc_i;

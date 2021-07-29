@@ -22,7 +22,7 @@ for nFFT_i = 1 : length(nFFTs)
         plot(d, Time_Err_Var_sec{nFFT_i}{subc_i} * 1e9, '-o'); % plot the performance curve
         grid on;        
         xlabel('distance (meter)');
-        ylabel('mean(Estimation error) [ns]');
+        ylabel('RMS [ns]');
         title(sprintf('delay RMS vs. distance'));  
         hold on;
     end

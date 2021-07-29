@@ -26,9 +26,9 @@ switch scenario
         
         switch LosOrNlos
             case 'LOS'
-                PL = PL_RMa_LOS;
+                PL = PL_RMa_LOS + normrnd(0, 4); % \sigma_SF = 4 dB in shadow fading
             case 'NLOS'
-                PL = PL_RMa_NLOS;
+                PL = PL_RMa_NLOS + normrnd(0, 6); % \sigma_SF = 6 dB in shado fading
             otherwise
                 error('Only LOS or NLOS is supported.\n');
         end
