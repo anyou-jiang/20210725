@@ -17,8 +17,10 @@ switch scenario
         
         if d_2D <= d_BP
             PL_RMa_LOS = PL_1;
+            Sigma_SF = 4;
         else
             PL_RMa_LOS = PL_2;
+            Sigma_SF = 6;
         end
         
         PL_prime_RMa_NLOS = 161.04 - 7.1 * log10(W) + 7.5 * log10(h) - (24.37 - 3.7 * (h/h_BS)^2) * log10(h_BS) + (43.42 - 3.1 * log10(h_BS)) * (log10(d_3D) - 3) + 20 * log10(f_c_GHz) - (3.2 * (log10(11.75 * h_UT))^2 - 4.97);
@@ -26,9 +28,10 @@ switch scenario
         
         switch LosOrNlos
             case 'LOS'
-                PL = PL_RMa_LOS + normrnd(0, 4); % \sigma_SF = 4 dB in shadow fading
+                PL = PL_RMa_LOS + normrnd(0, Sigma_SF); % \Sigma_SF = 4 dB/6 dB in shadow fading
             case 'NLOS'
-                PL = PL_RMa_NLOS + normrnd(0, 6); % \sigma_SF = 6 dB in shado fading
+                Sigma_SF = 8;
+                PL = PL_RMa_NLOS + normrnd(0, Sigma_SF); % \Sigma_SF = 8 dB in shado fading
             otherwise
                 error('Only LOS or NLOS is supported.\n');
         end
