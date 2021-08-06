@@ -1,5 +1,5 @@
 
-function save_plot_results_f(file_name, nFFTs, subcs, d, SNR_avg, Time_Err_Mean_sec, Time_Err_Var_sec)
+function save_plot_results_f(file_name, nFFTs, subcs, d, SNR_avg, TimeEst_sec, Time_Err_Mean_sec, Time_Err_Var_sec)
 close('all')
 
 legends = {};
@@ -8,7 +8,7 @@ for nFFT_i = 1 : length(nFFTs)
     for subc_i = 1 : length(subcs)
         subc = subcs(subc_i);
         
-        subplot(3, 1, 1);
+        subplot(4, 1, 1);
         plot(d, SNR_avg{nFFT_i}{subc_i}, '-+');
         grid on;
 
@@ -18,7 +18,15 @@ for nFFT_i = 1 : length(nFFTs)
         title(sprintf('SNR vs. distance'));  
         hold on;
 
-        subplot(3, 1, 2);
+        subplot(4, 1, 2);
+        plot(d, TimeEst_sec{nFFT_i}{subc_i} * 1e9, '-o'); % plot the performance curve
+        grid on;        
+        xlabel('distance (meter)');
+        ylabel('mean estimated delay [ns]');
+        title(sprintf('mean estimated delay vs. distance'));  
+        hold on;
+        
+        subplot(4, 1, 3);
         plot(d, Time_Err_Mean_sec{nFFT_i}{subc_i} * 1e9, '-o'); % plot the performance curve
         grid on;        
         xlabel('distance (meter)');
@@ -26,7 +34,7 @@ for nFFT_i = 1 : length(nFFTs)
         title(sprintf('mean delay residual error vs. distance'));  
         hold on;
         
-        subplot(3, 1, 3);
+        subplot(4, 1, 4);
         plot(d, Time_Err_Var_sec{nFFT_i}{subc_i} * 1e9, '-o'); % plot the performance curve
         grid on;        
         xlabel('distance (meter)');
@@ -35,13 +43,17 @@ for nFFT_i = 1 : length(nFFTs)
         hold on;        
     end
 end
-subplot(3, 1, 1);
+subplot(4, 1, 1);
 legend(legends, 'Location', 'northeast');
 hold off;
-subplot(3, 1, 2);
+subplot(4, 1, 2);
 legend(legends, 'Location', 'southeast');
 hold off;
-subplot(3, 1, 3);
+subplot(4, 1, 3);
+legend(legends, 'Location', 'southeast');
+hold off;
+subplot(4, 1, 4);
 legend(legends, 'Location', 'southeast');
 hold off;
 saveas(gcf, file_name, 'png');
+saveas(gcf, file_name, 'fig');

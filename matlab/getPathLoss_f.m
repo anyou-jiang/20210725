@@ -1,4 +1,4 @@
-function PL = getPathLoss_f(h_BS, h_UT, d_2D, f_c, scenario, LosOrNlos, h, W)
+function PL = getPathLoss_f(h_BS, h_UT, d_2D, f_c, scenario, LosOrNlos, hasShadowing, h, W)
 % get the path loss according to 3GPP TR38.901, table 7.4.1-1 Pathloss
 % models
 c = 3.0 * 1e8;
@@ -28,12 +28,16 @@ switch scenario
         
         switch LosOrNlos
             case 'LOS'
-                PL = PL_RMa_LOS + normrnd(0, Sigma_SF); % \Sigma_SF = 4 dB/6 dB in shadow fading
+                PL = PL_RMa_LOS;
             case 'NLOS'
                 Sigma_SF = 8;
-                PL = PL_RMa_NLOS + normrnd(0, Sigma_SF); % \Sigma_SF = 8 dB in shado fading
+                PL = PL_RMa_NLOS; 
             otherwise
                 error('Only LOS or NLOS is supported.\n');
+        end
+        
+        if (hasShadowing)
+            PL = PL + normrnd(0, Sigma_SF);
         end
     
     otherwise

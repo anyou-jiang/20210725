@@ -23,6 +23,7 @@ debug_flag = 0;
 
 channel_models  = {'3GPP38.901'};
 scenario = 'RMa';
+hasShadowing = true;
 sub_scenarios = {'LOS', 'NLOS'};
 
 for sub_scenario_i = 1 : numel(sub_scenarios)
@@ -34,6 +35,7 @@ for sub_scenario_i = 1 : numel(sub_scenarios)
     SNR_avg = cell(length(nFFTs), length(subcs));
     Time_Err_Var_sec = cell(length(nFFTs), length(subcs));
     Time_Err_Mean_sec = cell(length(nFFTs), length(subcs));
+    TimeEst_sec = cell(length(nFFTs), length(subcs));
 
     for nFFT_i = 1 : length(nFFTs)
         nFFT = nFFTs(nFFT_i);
@@ -49,13 +51,14 @@ for sub_scenario_i = 1 : numel(sub_scenarios)
             TimeErr_sec = zeros(num_of_sim, length(d));
             SNR_dB = zeros(num_of_sim, length(d));
             TimeEst_Err_Ts = zeros(num_of_sim, length(d));
+            Time_Est_sec = zeros(num_of_sim, length(d));
 
             for d_idx = 1 : length(d)
                 fprintf('d=%d meter:\n', d(d_idx))               
                 d_2D = d(d_idx);         
 
-                for idx = 1 : num_of_sim
-                    FSPL = getPathLoss_f(h_BS, h_UT, d_2D, f_c, scenario, sub_scenario, h, W); %20 * log10(r1) + 20 * log10(f) + 20 * log10(4*pi/c)- Gtx - Grx;   % refer to https://www.everythingrf.com/rf-calculators/free-space-path-loss-calculator
+                for sim_i = 1 : num_of_sim
+                    FSPL = getPathLoss_f(h_BS, h_UT, d_2D, f_c, scenario, sub_scenario, hasShadowing, h, W); %20 * log10(r1) + 20 * log10(f) + 20 * log10(4*pi/c)- Gtx - Grx;   % refer to https://www.everythingrf.com/rf-calculators/free-space-path-loss-calculator
                     channels_gains_dBm = Tx_pwr_dBm + Tx_power_scaling_dB + Tx_Gain + Fft_Scale_dB - FSPL;
                     channels_gains = 10 .^((channels_gains_dBm)/20);   
                     h = channels_gains;
@@ -64,16 +67,16 @@ for sub_scenario_i = 1 : numel(sub_scenarios)
                     ideal_delay_Ts = ceil(ideal_delay_second / Ts_sec); % calculate the delay by distance (in Ts, i.e., sample)
                     ideal_delay_second_quantized = ideal_delay_Ts * Ts_sec;
                     [SNRdB, TimeEstTs] = DelayEst_f(nFFT, subc, h, ideal_delay_Ts, debug_flag); % execute delay estimation in UE side
-                    SNR_dB(idx, d_idx) = SNRdB;
-                    TimeEst_Err_Ts(idx, d_idx) = TimeEstTs - ideal_delay_Ts;
-                    TimeErr_sec(idx, d_idx) = (TimeEstTs * Ts_sec - ideal_delay_second_quantized);
+                    SNR_dB(sim_i, d_idx) = SNRdB;
+                    TimeEst_Err_Ts(sim_i, d_idx) = TimeEstTs - ideal_delay_Ts;
+                    TimeErr_sec(sim_i, d_idx) = (TimeEstTs * Ts_sec - ideal_delay_second_quantized);
+                    Time_Est_sec(sim_i, d_idx) = TimeEstTs * Ts_sec;
 
-                    if (mod(idx, 1) == 0)
+                    if (mod(sim_i, 1) == 0)
                         TimeEst_second = TimeEstTs * Ts_sec;
                         fprintf('ideal delay = %f(us), Estimated delay = %f(us), error = %f(us) SNR=%f (dB) FSPL=%f\n', ...
                             ideal_delay_second_quantized * 1e6,  TimeEst_second * 1e6, (TimeEst_second - ideal_delay_second_quantized) * 1e6, SNRdB, FSPL);
                     end
-
                 end
             end
 
@@ -83,23 +86,30 @@ for sub_scenario_i = 1 : numel(sub_scenarios)
             % TimeErr_avg = mean(TimeErr_sec, 1);
             Time_Err_Var_second = zeros(length(d), 1);
             Time_Err_Mean_second = zeros(length(d), 1);
-            for idx = 1 : length(d)
-                Reliable_Estimation = abs(TimeErr_sec(:, idx)) < Threshold_second; % only keep those estimation error within the threshold as the reliables ones for RMS calculation
-                Time_Err_Var_second(idx) = sqrt(var(abs(TimeErr_sec(Reliable_Estimation, idx))));
-                Time_Err_Mean_second(idx) = mean(TimeErr_sec(Reliable_Estimation, idx));
+            Time_Est_second = zeros(length(d), 1);
+            for d_i = 1 : length(d)
+                Reliable_Estimation = abs(TimeErr_sec(:, d_i)) < Threshold_second; % only keep those estimation error within the threshold as the reliables ones for RMS calculation
+                Time_Err_Var_second(d_i) = sqrt(var(abs(TimeErr_sec(Reliable_Estimation, d_i))));
+                Time_Err_Mean_second(d_i) = mean(TimeErr_sec(Reliable_Estimation, d_i));
+                Time_Est_second(d_i) = mean(Time_Est_sec(Reliable_Estimation, d_i));
             end
             Time_Err_Var_sec{nFFT_i}{subc_i} = Time_Err_Var_second;
             Time_Err_Mean_sec{nFFT_i}{subc_i} = Time_Err_Mean_second;
-            fprintf('when nFFT = %d, subcarrier = %fkHz, distance (meter) : RMS(delay_error) (ns)\n', nFFT, subc/1000);
-            for idx = 1 : length(d)
-                fprintf('    %.2f : %f\n', d(idx), Time_Err_Var_sec{nFFT_i}{subc_i}(idx) * 1e9)
+            TimeEst_sec{nFFT_i}{subc_i} = Time_Est_second;
+            fprintf('when nFFT = %d, subcarrier = %fkHz, distance (meter) : mean(delay) mean(delay error) RMS(delay_error) (ns)\n', nFFT, subc/1000);
+            for d_i = 1 : length(d)
+                fprintf('    %.2f : %.05f %.05f %.05f\n', d(d_i), TimeEst_sec{nFFT_i}{subc_i}(d_i) * 1e9, Time_Err_Mean_sec{nFFT_i}{subc_i}(d_i) * 1e9, Time_Err_Var_sec{nFFT_i}{subc_i}(d_i) * 1e9)
             end
         end
     end
 
-
-    file_name = sprintf('%s_%s', scenario, sub_scenario);
-    save_plot_results_f(file_name, nFFTs, subcs, d, SNR_avg, Time_Err_Mean_sec, Time_Err_Var_sec);
+    if (hasShadowing)
+        tag = 'shadowing';
+    else
+        tag = 'noshadowing';
+    end
+    file_name = sprintf('%s_%s_%s', scenario, sub_scenario, tag);
+    save_plot_results_f(file_name, nFFTs, subcs, d, SNR_avg, TimeEst_sec, Time_Err_Mean_sec, Time_Err_Var_sec);
 end
 
 
