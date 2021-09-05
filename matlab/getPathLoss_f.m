@@ -1,4 +1,4 @@
-function PL = getPathLoss_f(h_BS, h_UT, d_2D, f_c, scenario, LosOrNlos, hasShadowing, h, W)
+function PL = getPathLoss_f(h_BS, h_UT, d_2D, f_c, scenario, hasShadowing, h, W)
 % get the path loss according to 3GPP TR38.901, table 7.4.1-1 Pathloss
 % models
 c = 3.0 * 1e8;
@@ -26,14 +26,21 @@ switch scenario
         PL_prime_RMa_NLOS = 161.04 - 7.1 * log10(W) + 7.5 * log10(h) - (24.37 - 3.7 * (h/h_BS)^2) * log10(h_BS) + (43.42 - 3.1 * log10(h_BS)) * (log10(d_3D) - 3) + 20 * log10(f_c_GHz) - (3.2 * (log10(11.75 * h_UT))^2 - 4.97);
         PL_RMa_NLOS = max(PL_RMa_LOS, PL_prime_RMa_NLOS);
         
-        switch LosOrNlos
-            case 'LOS'
-                PL = PL_RMa_LOS;
-            case 'NLOS'
-                Sigma_SF = 8;
-                PL = PL_RMa_NLOS; 
-            otherwise
-                error('Only LOS or NLOS is supported.\n');
+        
+        % Refer to ETSI TR 138 901 V14.0.0 (2017-05) P29 for the LOS
+        % probabilities in Table 7.4.2-1
+        if d_2D <= 10
+            P_LOS = 1;
+        else
+            P_LOS = exp(-(d_2D - 10) / 1000);
+        end
+        
+        is_LOS = binornd(1, P_LOS); 
+        if is_LOS == 1
+            PL = PL_RMa_LOS;
+        else
+            Sigma_SF = 8;
+            PL = PL_RMa_NLOS; 
         end
         
         if (hasShadowing)
