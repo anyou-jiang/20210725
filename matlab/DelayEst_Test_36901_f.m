@@ -1,6 +1,6 @@
 % Test delay estimator in DL
 
-num_of_sim = 10;       % number of simulation per SNR working point
+num_of_sim = 500;       % number of simulation per SNR working point
 
 Gtx = 0;
 Grx = 0;
